@@ -44,7 +44,7 @@ Owned by Jack Witt.
 - Hook callbacks into the main loop after parsing.
 
 ### [Phase 3 – External Command Runner](https://github.com/sowens23/cs321-final/issues/4)
-Owned by .
+Owned by Ivy Swenson
 - Command struct { vector args; bool background; };
 - fork() / execvp() implementation inside Executor class.
   - Handles ; vs. & (background) within one input line.
