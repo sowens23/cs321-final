@@ -1,6 +1,6 @@
 // Group Members: Ivy Swenson, Spencer Baysinger, Kohlby Vierthaler, and Jack Desrochers
 // File Name: shell.cpp
-// Date: 2025/04/21
+// Date: 2025/04/23
 // Description: This file contains the implementation of the shell class, which is responsible for managing the shell's command line interface. 
 //              It handles user input, command execution, and output display. The shell class also manages the history of commands entered by 
 //              the user and provides functionality for navigating through the command history.
@@ -12,8 +12,9 @@
 #include <regex>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
 
-
+// Split user input into tokens
 void parseInput(std::string &cmd, std::vector<std::string> &params) {
   std::istringstream stream(cmd);
   std::string arg;
@@ -25,7 +26,7 @@ void parseInput(std::string &cmd, std::vector<std::string> &params) {
 int main() {
   
   std::string input;
-  std::regex validInput("[a-zA-Z0-9-./_]+");
+  std::regex validInput("[a-zA-Z0-9-./_ ]+");
 
   // Read commands until the user quits
   while (true) {
@@ -35,14 +36,18 @@ int main() {
     std::vector<std::string> args;
 
     // Check to ensure input is valid, then check for specific cmds
-    if (std::regex_match(input, validInput)) {
+    if (std::regex_match(input, validInput) && input.length() <= 100) {
+
+      parseInput(input, args);
+      //args.push_back(nullptr);
+      pid_t pid = fork();
 
       if (/* input == SIGINT or */ input == "exit") {
         break;
       }
 
       if (input == "print") {
-        std::cout << "Print process pid here." << std::endl;
+        std::cout << pid << std::endl;
       }
 
       if (input == "help") {
@@ -52,11 +57,31 @@ int main() {
         << std::endl;
       }
 
+      // Child process code
+      if (pid == 0) {
+
+        //execvp(args[0], args.data());
+        exit(1);
+      
+      // Parent process code
+      } else {
+
+        //wait();
+      }
+
     // An invalid input character is detected
+    } else if (!std::regex_match(input, validInput)) {
+
+      std::cerr << "Error: Invalid input character(s). Valid characters are a-z, A-Z, 0-9, -, ., /, or _" 
+      << std::endl;
+
+    // Truncate input if 100-character limit has been exceeded
     } else {
 
-      std::cerr << "Invalid input character(s). Valid characters are a-z, A-Z, 0-9, -, ., /, or _" 
+      std::cerr << "Error: Inputs are limited to 100 characters."
       << std::endl;
+
+      input = input.substr(0, 100);
     }
   }
 
