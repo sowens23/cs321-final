@@ -83,7 +83,7 @@ int main() {
 
       input = input.substr(0, 100);
     }
-  }
+ }
 
   return 0;
 }
