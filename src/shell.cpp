@@ -28,8 +28,10 @@ int main() {
   std::string input;
   std::regex validInput("[a-zA-Z0-9-./_ ]+");
 
+  bool running = true;
+
   // Read commands until the user quits
-  while (true) {
+  while (running) {
     
     std::cout << "cs321% ";
     std::getline(std::cin, input);
@@ -43,18 +45,24 @@ int main() {
       pid_t pid = fork();
 
       if (/* input == SIGINT or */ input == "exit") {
-        break;
+        running = false;
       }
 
-      if (input == "print") {
-        std::cout << pid << std::endl;
+      //print only the parent PID
+      if (input == "print" && pid != 0) {
+        std::cout << "Shell PID: " << getpid() << std::endl;
       }
 
+      //currently shows built-in commands
       if (input == "help") {
         std::cout << "\n" 
-        << "Type a valid shell command, with a space between each argument."
-        << "\n Have a nice day :)"
+        << "Type a valid shell command, with a space between each argument.\n"
+        << "Built-in commands are:\n"
+        << "'print' - show shell PID\n"
+        << "'exit' - exit shell\n"
+        << "\nHave a nice day :)"
         << std::endl;
+        std::cout << "cs321% ";
       }
 
       // Child process code
