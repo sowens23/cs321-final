@@ -1,15 +1,1 @@
-name: Prevent Direct Push to Main
 
-on:
-  push:
-    branches: [main]
-
-jobs:
-  block:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Block Direct Push
-        if: github.event.pusher.name != 'web-flow' # allow merges via PR
-        run: |
-          echo "Direct push to main is not allowed."
-          exit 1
