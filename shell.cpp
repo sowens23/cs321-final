@@ -36,7 +36,7 @@ std::vector<Command> parseCommandLine(const std::string& inputLine) {
     } else if (c == ';' || c == '|' || c == '&') {
       if (!currentCommand.args.empty()) {
         if (c == '|') currentCommand.pipe_to_next = true;
-        if (c == '&') currentCommand.background = true;
+        // if (c == '&') currentCommand.background = true;
         commands.push_back(currentCommand);
         currentCommand = Command();
       }
