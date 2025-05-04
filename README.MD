@@ -9,8 +9,31 @@ Below you will find
 - Acknowledgements
 
 ## Project Details
+
 This program is a shell command interpreter that provides Unix users with an interface to the underlying operating system.  
-It interprets basic user commands and executes them as independent forked resources.  
+It interprets basic user commands and executes them as independent forked processes using `fork()` and `execvp()` system calls.
+
+### Features:
+- Custom prompt: `cs321%` to indicate readiness.
+- Built-in commands:
+  - `exit`: gracefully exits the shell.
+  - `print`: displays the current process ID (PID).
+  - `help`: displays built-in command help.
+  - `cd`: changes the current working directory.
+- Executes external programs (e.g., `ls`, `echo`, `grep`).
+- Supports:
+  - **Sequential commands** using `;`
+  - **Background execution** using `&`
+  - **Pipelines** using `|`, including multiple piped commands
+- Proper argument parsing including:
+  - Quoted arguments (`"like this"`)
+  - Escaped input
+- Input validation:
+  - Restricts accepted characters (alphanumerics, symbols like `.`, `_`, `/`, etc.)
+  - Rejects invalid characters with a clear error message
+  - Truncates input longer than 100 characters
+
+This shell demonstrates process management, piping, and simple parsing logic to simulate basic shell behavior with robust error handling and I/O management.
 
 ## Project Development Phases
 This project has been split into 6 phases/issues.   
@@ -53,13 +76,13 @@ Owned by Ivy Swenson
 - Rule: last command defaults to “;”.
 
 ### [Phase 4 – Advanced Features / Bonus](https://github.com/sowens23/cs321-final/issues/5)
-Owned by .
+Owned by Spencer Baysinger
 - Pipe operator pipes output of one program into another (See project doc in Canvas)
 - Verify cd is functional, if not program it in.
 - (Optional) If unit test exists, verify program passes.
 
 ### [Phase 5 - Polish and Submit Project](https://github.com/sowens23/cs321-final/issues/6)
-Owned by .
+Owned by Spencer Baysinger
 - Polish README
   - Include notes for shell commands like 'help'.
 - Create demo video

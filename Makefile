@@ -4,8 +4,8 @@ TARGET = shell
 
 all: $(TARGET)
 
-$(TARGET): src/shell.cpp
-	$(CXX) $(CXXFLAGS) -o $(TARGET) src/shell.cpp
+$(TARGET): shell.cpp
+	$(CXX) $(CXXFLAGS) -o $(TARGET) shell.cpp
 
 run: $(TARGET)
 	./$(TARGET)
