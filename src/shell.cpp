@@ -1,22 +1,9 @@
 // Group Members: Ivy Swenson, Spencer Baysinger, Kohlby Vierthaler, and Jack Desrochers
 // File Name: shell.cpp
 // Date: 2025/04/23
-// Description: This file contains the implementation of the shell class, which is responsible for managing the shell's command line interface. 
-//              It handles user input, command execution, and output display. The shell class also manages the history of commands entered by 
-//              the user and provides functionality for navigating through the command history.
-
-
-
-
-
-// =========================== Notes from the current programmer ============================
-// Author of phase 3: Ivy Swenson
-// Started: 04-26-2025
-// Updated: 04-28-2025
-// Goal: Refine and simplify the code from the previous programmer
-// Result: The code runs perfectly
-// Next goal: Proceed to phase 4
-
+// Description: This file contains the implementation of the shell class, which is responsible for managing the shell's command line interface.
+//              It handles user input, built-in commands, external command execution, and output display.
+//              The shell class also manages the history of commands entered by the user.
 
 #include <iostream>
 #include <sstream>
@@ -33,7 +20,37 @@ struct Command {
   bool background = false;
 };
 
-// ========================= Parse Input Line into Multiple Token-Groups =============================
+// ========================= Built-in Command Enum =============================
+enum class BuiltinType { EXIT, PRINT, HELP, INVALID };
+
+BuiltinType identifyBuiltin(const std::string& cmd) {
+  if (cmd == "exit") return BuiltinType::EXIT;
+  if (cmd == "print") return BuiltinType::PRINT;
+  if (cmd == "help") return BuiltinType::HELP;
+  return BuiltinType::INVALID;
+}
+
+bool runBuiltin(BuiltinType btype, bool& running) {
+  switch (btype) {
+    case BuiltinType::EXIT:
+      running = false;
+      return true;
+    case BuiltinType::PRINT:
+      std::cout << "Shell PID: " << getpid() << std::endl;
+      return true;
+    case BuiltinType::HELP:
+      std::cout << "\nBuilt-in commands:\n"
+                << "  exit  - Exit the shell\n"
+                << "  print - Show current shell PID\n"
+                << "  help  - Display help info\n" << std::endl;
+      return true;
+    case BuiltinType::INVALID:
+      return false;
+  }
+  return false;
+}
+
+// ========================= Parse Command Line into Token-Groups =============================
 std::vector<Command> parseCommandLine(const std::string& inputLine) {
   std::vector<Command> commands;
   std::regex rgx(R"(([^;&]+)([;&])?)");
@@ -61,15 +78,6 @@ std::vector<Command> parseCommandLine(const std::string& inputLine) {
   }
 
   return commands;
-}
-
-// ========================= Optional Input Token Parser =============================
-void parseInput(std::string &cmd, std::vector<std::string> &params) {
-  std::istringstream stream(cmd);
-  std::string arg;
-  while (stream >> arg) {
-    params.push_back(arg);
-  }
 }
 
 // ========================= Executor Class =============================
@@ -105,12 +113,11 @@ int main() {
   std::string input;
   Executor executor;
   std::regex validInput("[a-zA-Z0-9-./_ ;&]+");
+  bool running = true;
 
-  while (true) {
+  while (running) {
     std::cout << "cs321% ";
     std::getline(std::cin, input);
-
-    if (input == "exit") break;
 
     if (!std::regex_match(input, validInput)) {
       std::cerr << "Error: Invalid input character(s). Only a-z, A-Z, 0-9, -, ., /, _, space, ;, & are allowed.\n";
@@ -123,6 +130,13 @@ int main() {
     }
 
     auto commands = parseCommandLine(input);
+
+    // Built-in dispatch before exec
+    if (!commands.empty()) {
+      BuiltinType btype = identifyBuiltin(commands[0].args[0]);
+      if (runBuiltin(btype, running)) continue;
+    }
+
     executor.execute(commands);
   }
 
