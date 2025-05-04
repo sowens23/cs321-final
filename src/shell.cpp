@@ -27,18 +27,17 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-
-// ========================= Define Command Sructure =============================
+// ========================= Define Command Structure =============================
 struct Command {
-  std::vector<std::string> args; // Arguments of the command
-  bool background = false;       // Whether the command runs in background
+  std::vector<std::string> args;
+  bool background = false;
 };
 
-// ========================= Parse InputLine into multipule Token-Groups =============================
+// ========================= Parse Input Line into Multiple Token-Groups =============================
 std::vector<Command> parseCommandLine(const std::string& inputLine) {
   std::vector<Command> commands;
-  std::regex rgx(R"(([^;&]+)([;&])?)"); // Regex: Match command and optional separator
-  auto it = std::sregex_iterator(inputLine.begin(),inputLine.end(), rgx);
+  std::regex rgx(R"(([^;&]+)([;&])?)");
+  auto it = std::sregex_iterator(inputLine.begin(), inputLine.end(), rgx);
   auto end = std::sregex_iterator();
 
   for (; it != end; ++it) {
@@ -49,21 +48,22 @@ std::vector<Command> parseCommandLine(const std::string& inputLine) {
     std::string arg;
     Command cmd;
 
-  // Split command into arguments
     while (cmdStream >> arg) {
       cmd.args.push_back(arg);
     }
-  // Set background flag if delimiter is '&'
+
     cmd.background = (delim == "&");
     commands.push_back(cmd);
   }
- 
-  // Last command should be foreground by default
+
   if (!commands.empty()) {
     commands.back().background = false;
   }
-  
-// Split user input into tokens
+
+  return commands;
+}
+
+// ========================= Optional Input Token Parser =============================
 void parseInput(std::string &cmd, std::vector<std::string> &params) {
   std::istringstream stream(cmd);
   std::string arg;
@@ -72,139 +72,59 @@ void parseInput(std::string &cmd, std::vector<std::string> &params) {
   }
 }
 
+// ========================= Executor Class =============================
+class Executor {
+public:
+  void execute(const std::vector<Command>& commands) {
+    for (const auto& cmd : commands) {
+      if (cmd.args.empty()) continue;
+
+      pid_t pid = fork();
+      if (pid == 0) {
+        std::vector<char*> argv;
+        for (auto& arg : cmd.args)
+          argv.push_back(const_cast<char*>(arg.c_str()));
+        argv.push_back(nullptr);
+        execvp(argv[0], argv.data());
+        perror("execvp failed");
+        exit(1);
+      } else if (pid > 0) {
+        if (!cmd.background) {
+          int status;
+          waitpid(pid, &status, 0);
+        }
+      } else {
+        perror("fork failed");
+      }
+    }
+  }
+};
+
+// ========================= Main Function =============================
 int main() {
-  
   std::string input;
-  std::regex validInput("[a-zA-Z0-9-./_ ]+");
+  Executor executor;
+  std::regex validInput("[a-zA-Z0-9-./_ ;&]+");
 
-  bool running = true;
-
-  // Read commands until the user quits
-  while (running) {
-    
+  while (true) {
     std::cout << "cs321% ";
     std::getline(std::cin, input);
-    std::vector<std::string> args;
 
-    // Check to ensure input is valid, then check for specific cmds
-    if (std::regex_match(input, validInput) && input.length() <= 100) {
+    if (input == "exit") break;
 
-      parseInput(input, args);
-      //args.push_back(nullptr);
-      pid_t pid = fork();
+    if (!std::regex_match(input, validInput)) {
+      std::cerr << "Error: Invalid input character(s). Only a-z, A-Z, 0-9, -, ., /, _, space, ;, & are allowed.\n";
+      continue;
+    }
 
-      if (/* input == SIGINT or */ input == "exit") {
-        running = false;
-      }
-
-      //print only the parent PID
-      if (input == "print" && pid != 0) {
-        std::cout << "Shell PID: " << getpid() << std::endl;
-      }
-
-      //currently shows built-in commands
-      if (input == "help") {
-        std::cout << "\n" 
-        << "Type a valid shell command, with a space between each argument.\n"
-        << "Built-in commands are:\n"
-        << "'print' - show shell PID\n"
-        << "'exit' - exit shell\n"
-        << "\nHave a nice day :)"
-        << std::endl;
-        std::cout << "cs321% ";
-      }
-
-      // Child process code
-      if (pid == 0) {
-
-        //execvp(args[0], args.data());
-        exit(1);
-      
-      // Parent process code
-      } else {
-
-        //wait();
-      }
-
-    // An invalid input character is detected
-    } else if (!std::regex_match(input, validInput)) {
-
-      std::cerr << "Error: Invalid input character(s). Valid characters are a-z, A-Z, 0-9, -, ., /, or _" 
-      << std::endl;
-
-    // Truncate input if 100-character limit has been exceeded
-    } else {
-
-      std::cerr << "Error: Inputs are limited to 100 characters."
-      << std::endl;
-
+    if (input.length() > 100) {
+      std::cerr << "Error: Input limited to 100 characters.\n";
       input = input.substr(0, 100);
     }
- }
 
-  return commands;
-}
-
-
-// ========================= Execute Commands with fork() and execvp() =========================
-class Executor {
-  public:
-    void execute(const std::vector<Command>& commands) {
-      for (const auto& cmd : commands) {
-        if(cmd.args.empty()) continue; // Skip empty commands
-
-        pid_t pid = fork();
-        if (pid == 0) {
-          // Child process: convert args to char* array
-          std::vector<char*> argv;
-          for (auto& arg : cmd.args)
-            argv.push_back(const_cast<char*>(arg.c_str()));
-          argv.push_back(nullptr);
-
-          execvp(argv[0], argv.data()); // execute the command
-          perror("execvp failed");      // If execvp returns, there was an error
-          exit(1);
-        } else if (pid > 0) {
-          // Parent process 
-          if (!cmd.background) {
-            int status;
-            waitpid(pid, &status, 0); // Wait for foregound processes 
-          }
-        } else {
-          perror("fork failed");
-        }
-      }
-    }
-  };
-  
-
-// ========================= Main function ==========================
-int main() {
-    std::string input;
-    Executor executor;
-    std::regex validInput("[a-zA-Z0-9-./_ ;&]+"); // Allow ; and & also
-  
-    while (true) {
-      std::cout << "cs321% ";
-      std::getline(std::cin, input);
-  
-      // Handle built-in "exit"
-      if (input == "exit") break;
-  
-      // Check input validity
-      if (!std::regex_match(input, validInput)) {
-        std::cerr << "Error: Invalid input character(s). Only a-z, A-Z, 0-9, -, ., /, _, space, ;, & are allowed.\n";
-        continue;
-      }
-      if (input.length() > 100) {
-        std::cerr << "Error: Input limited to 100 characters.\n";
-        input = input.substr(0, 100);
-      }
-  
-      // Parse and execute the input
-      auto commands = parseCommandLine(input);
-      executor.execute(commands);
-    }
-  
-    return 0;
+    auto commands = parseCommandLine(input);
+    executor.execute(commands);
   }
+
+  return 0;
+}
